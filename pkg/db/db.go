@@ -41,6 +41,13 @@ func Init(dbFile string) error {
 	return nil
 }
 
+func Close() error {
+	if db == nil {
+		return nil
+	}
+	return db.Close()
+}
+
 func AddTask(task *Task) (int64, error) {
 	res, err := db.Exec(
 		`INSERT INTO scheduler (date, title, comment, repeat) VALUES (?, ?, ?, ?)`,

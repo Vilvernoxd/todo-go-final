@@ -14,29 +14,29 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	task.Title = strings.TrimSpace(task.Title)
 	if task.Title == "" {
-		writeJSON(w, map[string]string{"error": "title is required"})
+		writeJSON(w, map[string]string{"error": "title is required"}, http.StatusBadRequest)
 		return
 	}
 
 	err = checkDate(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	id, err := db.AddTask(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, map[string]string{"id": strconv.FormatInt(id, 10)})
+	writeJSON(w, map[string]string{"id": strconv.FormatInt(id, 10)}, http.StatusOK)
 }
 
 func checkDate(task *db.Task) error {
@@ -72,8 +72,13 @@ func checkDate(task *db.Task) error {
 	return nil
 }
 
-func writeJSON(w http.ResponseWriter, data any) {
+func writeJSON(w http.ResponseWriter, data any, status ...int) {
+	code := http.StatusOK
+	if len(status) > 0 {
+		code = status[0]
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	enc := json.NewEncoder(w)
-	enc.Encode(data)
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(data)
 }
